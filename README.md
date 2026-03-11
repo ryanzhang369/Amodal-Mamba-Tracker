@@ -102,7 +102,7 @@ Maps latent variable $z_t$ back to spatial dimensions, outputting amodal heatmap
 Run the data capture script within Isaac Sim's Python environment:
 
 ```bash
-./python.sh vision_world_model_capture_v11.py
+./python.sh vision_world_model_capture.py
 ```
 
 #### 2. Train SSM World Model
@@ -128,7 +128,7 @@ python visualize_amodal_results.py
 
 ```
 Amodal-Mamba-Tracker/
-├── vision_world_model_capture_v11.py    # Isaac Sim data generation
+├── vision_world_model_capture.py        # Isaac Sim data generation
 ├── train_mamba_world_model.py           # SSM model training
 ├── visualize_amodal_results.py          # Inference visualization
 ├── data/                                # Generated dataset directory
