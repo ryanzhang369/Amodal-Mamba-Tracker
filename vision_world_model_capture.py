@@ -1,6 +1,5 @@
 from omni.isaac.kit import SimulationApp
 
-# 1. 初始化 SimulationApp
 simulation_app = SimulationApp({"headless": True, "physics_dt": 1.0/120.0, "rendering_dt": 1.0/120.0})
 
 import os
@@ -16,15 +15,11 @@ from pxr import UsdGeom, Gf
 from scipy.spatial.transform import Rotation as R
 from omni.isaac.nucleus import get_assets_root_path
 
-# ==========================================
-# Hyperparameters & Config
-# ==========================================
-# 【改良】你可以放心大胆地设为 1000 了
+
 NUM_EPISODES = 1000         
 
-# 【改良】物理步进次数设为 1200 次 (10 秒)。实际保存帧数依然是 1200 / 4 = 300 帧
 PHYSICS_STEPS_PER_EPISODE = 1200  
-SAVE_INTERVAL = 4 # 每 4 个物理步(对应 30 FPS)保存一次数据
+SAVE_INTERVAL = 4 
 
 RESOLUTION = (256, 256)   
 DT = 1.0 / 120.0          
@@ -43,13 +38,11 @@ CAM_DRONE_PATH = "/World/Camera_Drone"
 
 assets_root_path = get_assets_root_path()
 if assets_root_path is None:
-    raise Exception("无法连接到 Nucleus 服务器！")
+    raise Exception("无法连接Nucleus 服务器！")
     
 vehicle_usd = assets_root_path + "/Isaac/Robots/Forklift/forklift_c.usd"
 
-# ==========================================
-# 物理运动逻辑 (保持不变)
-# ==========================================
+
 class AggressiveTracker:
     def __init__(self, init_pos):
         self.curr_pos = np.array(init_pos, dtype=float)
@@ -88,9 +81,7 @@ def get_vehicle_pose(t, params):
     heading_deg = np.degrees(np.arctan2(dy, dx)) + VEHICLE_YAW_OFFSET
     return np.array([x, y, 0.1]), heading_deg
 
-# ==========================================
-# Initialize World & Replicator Lighting
-# ==========================================
+
 world = World(stage_units_in_meters=1.0)
 stage = world.stage
 
@@ -176,9 +167,6 @@ def update_camera(path, eye, target):
     xform.ClearXformOpOrder()
     xform.AddTransformOp().Set(m)
 
-# ==========================================
-# Main Loop
-# ==========================================
 print("Warm-up rendering...")
 for _ in range(30): 
     world.step(render=True)
@@ -203,7 +191,6 @@ for ep in range(NUM_EPISODES):
     tracker = AggressiveTracker(init_pos=start_pos + np.array([-5.0, 3.0, 8.0]))
     current_lookat = start_pos.copy()
 
-    # 【改良】物理推演次数增加到 1200 次
     for i in range(PHYSICS_STEPS_PER_EPISODE):
         time_t = i * DT
         target_pos, heading_deg = get_vehicle_pose(time_t, traj_params)
@@ -212,7 +199,7 @@ for ep in range(NUM_EPISODES):
         
         v_rad = np.radians(heading_deg - VEHICLE_YAW_OFFSET)
         fwd_v = np.array([np.cos(v_rad), np.sin(v_rad), 0.0])
-        # 【改良】保证轨道运算的周期对齐新的物理总步数
+        
         p = i / (PHYSICS_STEPS_PER_EPISODE - 1)
         orbit_offset = np.array([traj_params["orbit_radius"] * np.cos(p*2*np.pi*traj_params["laps"]),
                                 traj_params["orbit_radius"] * np.sin(p*2*np.pi*traj_params["laps"]),
@@ -254,37 +241,27 @@ for ep in range(NUM_EPISODES):
         
         update_camera(CAM_DRONE_PATH, eye=drone_pos + rot_m.apply([0.2, 0, 0.1]), target=current_lookat)
         
-        # ====================================
-        # 【核心优化】：降采样与按需渲染
-        # ====================================
         should_save_data = (i % SAVE_INTERVAL == 0)
         
-        # 1. 物理步进。如果当前帧不需要保存，我们直接关闭光线追踪渲染，极大提升循环速度！
         world.step(render=should_save_data)
         
         if should_save_data:
-            # 只有在需要提取图像时，才触发 Replicator 的渲染管线
             rep.orchestrator.step()
             
             rgb = rgb_annot.get_data()
             seg_modal = seg_annot.get_data()
             dep = depth_annot.get_data()
 
-            # 2. 瞬间隐藏所有遮挡物 
             for path in obstacle_paths:
                 hide_prim(path)
                 
-            # 3. 强制仅更新渲染管线，获取无视遮挡的完美 Mask 
             world.render() 
             rep.orchestrator.step()
             
             seg_amodal = seg_annot.get_data()
-            
-            # 4. 恢复遮挡物可见性，准备进入下一帧 
             for path in obstacle_paths:
                 show_prim(path)
 
-            # 5. 数据解包与保存
             if rgb is not None and "data" in seg_modal and "data" in seg_amodal:
                 rgb_img = rgb[:, :, :3].astype(np.uint8)
                 modal_mask = seg_modal["data"]
