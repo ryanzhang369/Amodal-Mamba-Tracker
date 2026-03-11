@@ -43,7 +43,7 @@ A 3D physics-interactive environment built on Omniverse Isaac Sim.
 * Precise occlusion ratio computation (`occlusion_ratio`)
 * 6DoF poses, linear velocities, and angular velocities for both UAV and target
 
-![Amodal Tracking Result](figure/rgb_uav.png)
+![Amodal Tracking Result](figure/episode_frames.png)
 
 ## Algorithm Framework
 
