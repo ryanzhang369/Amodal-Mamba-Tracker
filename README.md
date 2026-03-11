@@ -45,6 +45,12 @@ A 3D physics-interactive environment built on Omniverse Isaac Sim.
 
 ![Amodal Tracking Result](figure/episode_frames.png)
 
+*Figure: A series of consecutive sampling frames showing the movement of a blue forklift in a simulated obstacle environment (including frames 0, 74, 149, 224, and 299).
+
+![Amodal Tracking Result](figure/dashboard.png)
+
+*Figure: Visualization of a tracking episode showing the drone's visual input, segmentation mask, kinematic states, and 3D flight trajectory relative to the target forklift.
+
 ## Algorithm Framework
 
 **File:** `train_mamba_world_model.py`
