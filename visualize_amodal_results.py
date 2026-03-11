@@ -11,7 +11,7 @@ def visualize_qualitative_results():
     CHECKPOINT_PATH = "checkpoints/best_mamba_world_model.pth"
     DEVICE = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     
-    print(f"🔍 正在加载预训练 Mamba 模型...")
+    print(f"正在加载预训练 Mamba 模型...")
     model = ProbabilisticSelectiveWorldModel().to(DEVICE)
     model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location=DEVICE))
     model.eval()
@@ -20,10 +20,7 @@ def visualize_qualitative_results():
     if len(test_files) == 0:
         raise FileNotFoundError("找不到测试数据，请检查路径！")
     
-    # ==========================================
-    # 【核心改良】智能搜索完美遮挡片段
-    # ==========================================
-    print("🕵️ 正在扫描数据集，寻找拥有最高遮挡率的 Episode...")
+    print("正在扫描数据集，寻找拥有最高遮挡率的 Episode...")
     best_file = None
     best_peak_idx = 0
     max_occ_value = 0.0
@@ -35,21 +32,14 @@ def visualize_qualitative_results():
             max_occ_value = np.max(occ)
             best_file = f
             best_peak_idx = np.argmax(occ)
-
-    if max_occ_value < 0.3:
-        print(f"⚠️ 警告：这 {len(test_files)} 集数据中没有发现严重的遮挡事件 (最高遮挡率仅 {max_occ_value:.2f})。请生成更多数据。")
     
-    print(f"🎯 选定文件: {os.path.basename(best_file)}")
-    print(f"📊 最高遮挡率: {max_occ_value:.2f} (发生在第 {best_peak_idx} 帧)")
+    print(f"选定文件: {os.path.basename(best_file)}")
+    print(f"最高遮挡率: {max_occ_value:.2f} (发生在第 {best_peak_idx} 帧)")
 
-    # ==========================================
-    # 读取数据并进行推断
-    # ==========================================
     test_data = np.load(best_file, allow_pickle=False)
     images_np = test_data['img']
     actions_np = test_data['action']
     
-    # 为了保证能看到“入场 -> 遮挡 -> 驶出”的完整过程，我们把推理长度延长
     SEQ_LEN = min(300, len(images_np)) 
     
     img_tensor = torch.from_numpy(images_np[:SEQ_LEN]).float().permute(0, 3, 1, 2).unsqueeze(0).to(DEVICE) / 255.0
@@ -61,7 +51,6 @@ def visualize_qualitative_results():
     z_prev = torch.zeros(batch_size, model.latent_dim).to(DEVICE)
     action_prev = torch.zeros(batch_size, action_tensor.shape[-1]).to(DEVICE)
     
-    print(f"🎬 开始对该 Episode 进行物理推演...")
     with torch.no_grad():
         for t in range(SEQ_LEN):
             pred_mask_logits, z_t, ssm_state_t, _, _ = model.forward_step(
@@ -71,13 +60,9 @@ def visualize_qualitative_results():
             predicted_probs.append(prob_map)
             z_prev, ssm_state_prev, action_prev = z_t, ssm_state_t, action_tensor[:, t]
 
-    # ==========================================
-    # 顶会级绘图排版 (围绕遮挡峰值取帧)
-    # ==========================================
-    print("🎨 正在生成定性结果对比图...")
+    print("正在生成定性结果对比图...")
     num_display = 8
     
-    # 锁定高光时刻：以遮挡最严重的帧为中心，前后各取 30-40 帧
     start_frame = max(0, best_peak_idx - 35)
     end_frame = min(SEQ_LEN - 1, best_peak_idx + 40)
     frame_indices = np.linspace(start_frame, end_frame, num_display, dtype=int)
@@ -109,7 +94,7 @@ def visualize_qualitative_results():
 
     save_path = "amodal_qualitative_result.png"
     plt.savefig(save_path, bbox_inches='tight', dpi=300)
-    print(f"✅ 完美遮挡视角的图已保存至: {save_path}")
+    print(f"图已保存至: {save_path}")
 
 if __name__ == "__main__":
     visualize_qualitative_results()
