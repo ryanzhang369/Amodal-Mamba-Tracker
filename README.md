@@ -43,6 +43,7 @@ A 3D physics-interactive environment built on Omniverse Isaac Sim.
 * Precise occlusion ratio computation (`occlusion_ratio`)
 * 6DoF poses, linear velocities, and angular velocities for both UAV and target
 
+![Amodal Tracking Result](figure/rgb_uav.png)
 
 ## Algorithm Framework
 
@@ -74,7 +75,7 @@ Maps latent variable $z_t$ back to spatial dimensions, outputting amodal heatmap
 ## Qualitative Analysis & Visualization
 
 **File:** `visualize_amodal_results.py`
-![Amodal Tracking Result](assets/amodal_qualitative_result.png)
+![Amodal Tracking Result](figure/amodal_qualitative_result.png)
 *Figure: The drone's RGB view (top) alongside our model's Amodal Heatmap (bottom). The sequence demonstrates the SSM model's ability to maintain high belief confidence of the target's position even during severe, full occlusion.*
 
 **Features:**
